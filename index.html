@@ -226,6 +226,7 @@ canvas{display:block;width:100%;height:100%;}
         <li>Catching a <b>wrong character</b> — they're held for <b>3 seconds</b>, then automatically released</li>
         <li>You can only hold <b>one character at a time</b></li>
         <li>Place <b>all 5 band members</b> to complete the show!</li>
+        <li>Watch out — a placed member will <span>run away</span> after <b>45 seconds</b> if left alone!</li>
       </ul>
       <div id="band-list">
         <div class="band-item"><span class="dot" style="background:#ff6644"></span>Moti → Vocals</div>
@@ -727,6 +728,7 @@ let rocoFirstCatch = true; // becomes false after first-time Roco event complete
 let avivFirstCatch = true; // becomes false after first-time Aviv event completes
 let amirFirstCatch = true; // becomes false after first-time Amir Salomon event completes
 let escapedMsg = 0;  // countdown frames for "He's escaped!" flash
+let runAwayMsg = { timer: 0, name: '' }; // band member run-away flash
 
 // ── Crowd Events (Mosh Pit / Wall of Death) ────────────────────────────────
 let crowdEvent = null;  // null | { type:'mosh'|'wall', timer:0, duration:0, cx:0 }
@@ -741,6 +743,7 @@ const EVENT_COOLDOWN = 600; // 10s minimum gap between events
 function update(dt){
   if(gameWon){ winTimer+=dt; return; }
   if(escapedMsg > 0) escapedMsg -= dt;
+  if(runAwayMsg.timer > 0) runAwayMsg.timer -= dt;
 
   // ── Crowd event tick & random trigger ──────────────────────────────────
   if(crowdEventCooldown > 0) crowdEventCooldown -= dt;
@@ -860,6 +863,7 @@ if(crowdEvent && crowdEvent.type==='wall' && ch.type==='other'){
         if(Math.abs(ch.vx)>0.0002) ch.facing=ch.vx>0?1:-1;
         // Occasional direction change
         if(!isMobile && Math.random()<0.0008*dt){ch.vx*=-1;}
+        if(isMobile && Math.random()<0.004*dt){ ch.vx=(Math.random()<0.5?1:-1)*(0.0010+Math.random()*0.0016); }
         ch.sy = isMobile ? CH * Math.min(ch.walkY * 1.12, 0.93) : CH*ch.walkY + Math.sin(ch.bobPhase)*3*SCALE;
         ch.sx = CW*ch.x;
       }
@@ -998,6 +1002,20 @@ if(crowdEvent && crowdEvent.type==='wall' && ch.type==='other'){
       const p = ch.placedPos;
       ch.sx += (p.sx-ch.sx)*0.12;
       ch.sy += (p.sy-ch.sy)*0.12;
+      // 20-second stay limit — then run away
+      if(!gameWon){
+        ch.placedTimer = (ch.placedTimer||0) + dt;
+        if(ch.placedTimer >= 45*60){
+          ch.state = 'walking';
+          ch.placed = false;
+          ch.placedTimer = 0;
+          ch.x = ch.sx / CW;
+          ch.vx = (Math.random()<0.5?1:-1)*(0.0010+Math.random()*0.0015);
+          ch.facing = ch.vx > 0 ? 1 : -1;
+          runAwayMsg = { timer: 150, name: ch.name };
+          updateHUD();
+        }
+      }
     }
   }
 
@@ -1219,6 +1237,7 @@ function releaseChar(cx, cy){
     // Correct placement!
     ch.state='placed'; ch.placed=true;
     ch.placedPos={sx:dzp.sx, sy:dzp.sy+10*SCALE};
+    ch.placedTimer = 0;
     ch.escapeTimer=0; ch.bubbleTimer=0;
     ch.wobble=15;
     spawnParticles(dzp.sx, dzp.sy, dz.color);
@@ -2074,6 +2093,26 @@ function drawEscapedMsg(){
   ctx.restore();
 }
 
+function drawRunAwayMsg(){
+  if(runAwayMsg.timer <= 0) return;
+  const alpha = Math.min(1, runAwayMsg.timer / 30);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const fs = Math.round(CW * 0.065);
+  ctx.font = `900 ${fs}px Oswald,Impact,sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const cx = CW / 2, cy = CH * 0.07;
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillText(`${runAwayMsg.name} ran away!`, cx+3, cy+3);
+  const grd = ctx.createLinearGradient(cx, cy-fs*0.6, cx, cy+fs*0.6);
+  grd.addColorStop(0, '#ff2200');
+  grd.addColorStop(1, '#ff8800');
+  ctx.fillStyle = grd;
+  ctx.fillText(`${runAwayMsg.name} ran away!`, cx, cy);
+  ctx.restore();
+}
+
 function drawCursor(){
   if(isMobile) return; // no cursor on mobile
   ctx.save();
@@ -2297,6 +2336,7 @@ function render(ts){
 
   // Escaped flash message
   drawEscapedMsg();
+  drawRunAwayMsg();
 
   // Crowd event banner
   drawCrowdEvent();
