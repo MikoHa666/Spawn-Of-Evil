@@ -1017,10 +1017,27 @@ if(crowdEvent && crowdEvent.type==='wall' && ch.type==='other'){
       for(let i=others.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [others[i],others[j]]=[others[j],others[i]]; }
       const count = others.length;
       others.forEach((ch, i) => {
-        const margin = CW * 0.06;
-        const spacing = (CW - margin*2) / Math.max(count - 1, 1);
-        ch.lineupTargetX = margin + i * spacing;
-        ch.lineupTargetY = CH * 0.88 + (i % 2 === 0 ? 0 : -CH * 0.04); // even=front, odd=slightly back
+        if(isMobile){
+          // Mobile: spread into rows of 6, each row 25% more vertical gap than previous
+          const perRow = 6;
+          const row = Math.floor(i / perRow);
+          const col = i % perRow;
+          const rowCount = perRow; // chars per row for X spacing
+          const mMargin = CW * 0.05;
+          const mSpacing = (CW - mMargin*2) / Math.max(rowCount - 1, 1);
+          const baseGap = CH * 0.04;                     // same as current even/odd gap
+          let rowY = CH * 0.90;                          // front row
+          for(let r = 0; r < row; r++){
+            rowY -= baseGap * Math.pow(1.25, r);         // each row 25% further back
+          }
+          ch.lineupTargetX = mMargin + col * mSpacing;
+          ch.lineupTargetY = rowY;
+        } else {
+          const margin = CW * 0.06;
+          const spacing = (CW - margin*2) / Math.max(count - 1, 1);
+          ch.lineupTargetX = margin + i * spacing;
+          ch.lineupTargetY = CH * 0.88 + (i % 2 === 0 ? 0 : -CH * 0.04); // even=front, odd=slightly back
+        }
         ch.state = 'lineup';
         ch.bubbleTimer = 0;
         ch.wobble = 0;
