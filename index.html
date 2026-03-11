@@ -168,6 +168,22 @@ canvas{display:block;width:100%;height:100%;}
   box-shadow:0 0 35px rgba(255,40,0,0.7),inset 0 1px 0 rgba(255,150,80,.3);
   transform:translateY(-1px);}
 #splash-btn:active{transform:translateY(1px);}
+#splash-btn-lite{
+  display:none; /* shown only on mobile via JS */
+  width:100%;padding:11px;margin-top:10px;
+  font-family:'Metal Mania',cursive;font-size:clamp(13px,2.4vw,18px);
+  color:#ffcc88;background:linear-gradient(135deg,#3a2000,#7a4400,#3a2000);
+  border:2px solid #cc7700;border-radius:6px;cursor:pointer;
+  letter-spacing:.06em;text-shadow:0 0 8px rgba(255,150,0,0.5);
+  box-shadow:0 0 14px rgba(180,100,0,0.3),inset 0 1px 0 rgba(255,180,80,.15);
+  transition:all .2s;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  user-select:none;-webkit-user-select:none;
+}
+#splash-btn-lite:hover{background:linear-gradient(135deg,#4a2800,#aa5500,#4a2800);
+  box-shadow:0 0 24px rgba(220,130,0,0.5); transform:translateY(-1px);}
+#splash-btn-lite:active{transform:translateY(1px);}
 
 /* ── Mobile: strip GPU-heavy CSS effects ───────────────────────────── */
 @media (max-width: 1024px) and (pointer: coarse) {
@@ -236,6 +252,7 @@ canvas{display:block;width:100%;height:100%;}
         <div class="band-item"><span class="dot" style="background:#ffaa22"></span>Yaron → Drums</div>
       </div>
       <button id="splash-btn">🤘 LET'S SPAWN SOME EVIL 🤘</button>
+      <button id="splash-btn-lite">😈 Let's Spawn Little Evil — Better for Mobile 😈</button>
     </div>
   </div>
 </div>
@@ -259,7 +276,7 @@ canvas{display:block;width:100%;height:100%;}
 //   0 = full crowd  — all Metal Head characters appear on mobile
 //   1 = lite crowd  — only the Metal Heads NOT listed in MOBILE_EXCLUDED_HEADS appear
 // ═══════════════════════════════════════════════════════════════════════════
-const MOBILE_LITE_CROWD = 1; // ← change to 1 for lite mode on mobile
+let MOBILE_LITE_CROWD = 0; // set at runtime by splash buttons (0=full, 1=lite)
 
 // Metal Head names that are EXCLUDED from the crowd when MOBILE_LITE_CROWD = 1
 // (i.e. only Metal_Head_7 and Metal_Head_8 remain by default)
@@ -678,8 +695,15 @@ function _unlockAudio(){
   if(_audioCtx.state === 'suspended') _audioCtx.resume();
 }
 
-document.getElementById('splash-btn').addEventListener('pointerdown', e=>{
-  e.preventDefault();
+// Show lite-crowd button only on mobile
+if(isMobile) document.getElementById('splash-btn-lite').style.display = 'block';
+
+function startGame(liteMode){
+  MOBILE_LITE_CROWD = liteMode;
+  // On mobile lite mode, remove excluded Metal Heads from the already-initialised chars array
+  if(isMobile && MOBILE_LITE_CROWD === 1){
+    chars = chars.filter(ch => !MOBILE_EXCLUDED_HEADS.includes(ch.name));
+  }
   _unlockAudio();
   document.getElementById('splash-screen').style.display='none';
   const bgMusic = new Audio('Audio/1.mp3');
@@ -735,7 +759,10 @@ document.getElementById('splash-btn').addEventListener('pointerdown', e=>{
     cover.classList.add('fade-out');
     setTimeout(()=>{ cover.style.display='none'; }, 1000);
   }, isMobile ? 15000 : 13000);
-});
+}
+
+document.getElementById('splash-btn').addEventListener('pointerdown', e=>{ e.preventDefault(); startGame(0); });
+document.getElementById('splash-btn-lite').addEventListener('pointerdown', e=>{ e.preventDefault(); startGame(1); });
 
 // ═══════════════════════════════════════════════════════════════════════════
 // UPDATE
