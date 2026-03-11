@@ -255,6 +255,24 @@ canvas{display:block;width:100%;height:100%;}
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
+// MOBILE CROWD MODE  (manual test toggle — PC always uses all characters)
+//   0 = full crowd  — all Metal Head characters appear on mobile
+//   1 = lite crowd  — only the Metal Heads NOT listed in MOBILE_EXCLUDED_HEADS appear
+// ═══════════════════════════════════════════════════════════════════════════
+const MOBILE_LITE_CROWD = 1; // ← change to 1 for lite mode on mobile
+
+// Metal Head names that are EXCLUDED from the crowd when MOBILE_LITE_CROWD = 1
+// (i.e. only Metal_Head_7 and Metal_Head_8 remain by default)
+const MOBILE_EXCLUDED_HEADS = [
+  'Metal Head 1',
+  'Metal Head 2',
+  'Metal Head 3',
+  'Metal Head 4',
+  'Metal Head 5',
+  'Metal Head 6',
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
 // CANVAS SETUP
 // ═══════════════════════════════════════════════════════════════════════════
 const cv = document.getElementById('cv');
@@ -567,7 +585,11 @@ const OTHER_CHARS = [
   { name:'Tal Sawi',     type:'other', catchText:"Beers n' Sabich!",            walkY:0.74, col:['#558833','#0a1400','#88cc44','#ddd'], imgName:'tal_sawi.webp',     imgCaught:'tal_sawi_caught.webp'     },
   { name:'Amir Salomon', type:'other', catchText:"Not your bass player anymore!!!", walkY:0.73, col:['#334477','#00081a','#5566bb','#ddd'], imgName:'amir_salomon.webp', imgCaught:'amir_salomon_caught.webp' },
 ];
-const ALL_DEFS = [...BAND_MEMBERS, ...OTHER_CHARS];
+const ALL_DEFS_FULL = [...BAND_MEMBERS, ...OTHER_CHARS];
+// On mobile with lite crowd mode, exclude the listed Metal Head names
+const ALL_DEFS = (isMobile && MOBILE_LITE_CROWD === 1)
+  ? ALL_DEFS_FULL.filter(d => !MOBILE_EXCLUDED_HEADS.includes(d.name))
+  : ALL_DEFS_FULL;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CHARACTER IMAGE PRE-LOADER
